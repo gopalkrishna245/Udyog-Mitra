@@ -28,6 +28,7 @@ model User {
   grievances        Grievance[]
   chatSessions      ChatSession[]
   auditLogs         AuditLog[]
+  documentConsents  DocumentConsent[]
 }
 
 model Role {
@@ -41,6 +42,7 @@ model BusinessProfile {
   userId             String @unique
   user               User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   legalName          String
+  organizationType   String @default("proprietorship")
   pan                String?
   gstin              String?
   activity           String
@@ -150,6 +152,7 @@ model Application {
   statusHistory     ApplicationStatusHistory[]
   queries           Query[]
   documents         Document[]
+  documentLinks     ApplicationDocument[]
   inspections       Inspection[]
   certificates      Certificate[]
   renewals          Renewal[]
@@ -220,10 +223,40 @@ model Document {
   type           String
   fileName       String
   status         String @default("Pending verification")
+  mimeType       String?
+  content        Bytes?
+  byteSize       Int @default(0)
+  sha256         String?
+  source         String @default("manual")
+  sourceReference String?
+  simulated      Boolean @default(true)
+  sourceMatch    Boolean @default(false)
   expiresAt      DateTime?
   versions       DocumentVersion[]
   verificationRecords VerificationRecord[]
+  applicationLinks ApplicationDocument[]
   createdAt      DateTime @default(now())
+  @@index([ownerId, createdAt])
+}
+
+model ApplicationDocument {
+  applicationId String
+  documentId    String
+  createdAt     DateTime @default(now())
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  document      Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  @@id([applicationId, documentId])
+  @@index([documentId])
+}
+
+model DocumentConsent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([userId, expiresAt])
 }
 
 model DocumentVersion {
@@ -243,6 +276,9 @@ model VerificationRecord {
   provider   String
   status     String
   reference  String?
+  officeName String?
+  visitAt    DateTime?
+  note       String?
   verifiedAt DateTime @default(now())
 }
 

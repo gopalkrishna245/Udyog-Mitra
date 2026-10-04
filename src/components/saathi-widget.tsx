@@ -3,15 +3,16 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/routing';
-import { ArrowUp, Bot, Headphones, Mic, MicOff, MessageCircle, Minimize2, ThumbsDown, ThumbsUp, Volume2, VolumeX, X } from 'lucide-react';
+import { ArrowRight, ArrowUp, Bot, Headphones, Mic, MicOff, MessageCircle, Minimize2, ThumbsDown, ThumbsUp, Volume2, VolumeX, X } from 'lucide-react';
 import { createSpeechRecognition, type SpeechRecognitionLike, type SpeechWindow } from '@/lib/speech-provider';
 
-type Message = { role: 'user' | 'assistant'; content: string; source?: { title: string; href: string }; handoff?: boolean };
+type Message = { role: 'user' | 'assistant'; content: string; source?: { title: string; href: string }; handoff?: boolean; action?: string | null };
 const HISTORY_KEY = 'udyog-mitra-saathi-history';
 const speechLanguage: Record<string, string> = { en: 'en-IN', mr: 'mr-IN', hi: 'hi-IN' };
 
 export function SaathiWidget() {
   const t = useTranslations('Saathi');
+  const workspaceText = useTranslations('Workspace');
   const agentText = useTranslations('Agent');
   const locale = useLocale();
   const router = useRouter();
@@ -87,10 +88,10 @@ export function SaathiWidget() {
     setBusy(true);
     try {
       const response = await fetch('/api/ai/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message: clean, language: locale, externalProcessingConsent: externalConsent }) });
-      const data = await response.json() as { data?: { answer: string; sources: Array<NonNullable<Message['source']>>; needsHuman: boolean }; error?: { message?: string } };
+      const data = await response.json() as { data?: { answer: string; sources: Array<NonNullable<Message['source']>>; needsHuman: boolean; nextBestAction?: string | null }; error?: { message?: string } };
       if (!response.ok) throw new Error(data.error?.message || 'Request failed');
       const result = data.data;
-      const answer: Message = { role: 'assistant', content: result?.answer || t('handoff'), source: result?.sources[0], handoff: result?.needsHuman };
+      const answer: Message = { role: 'assistant', content: result?.answer || t('handoff'), source: result?.sources[0], handoff: result?.needsHuman, action: result?.nextBestAction };
       const completed = [...next, answer];
       persist(completed);
       if (voiceMode && !muted) speak(answer.content);
@@ -144,7 +145,13 @@ export function SaathiWidget() {
       <header className="saathi-header"><span className="saathi-avatar"><Bot size={18} /></span><span><strong>{t('name')}</strong><small>{t('guidance')}</small></span><button className="saathi-icon" onClick={() => setVoiceMode(true)} aria-label={t('voiceMode')} title={t('voiceMode')}><Headphones size={17} /></button><button className="saathi-icon" onClick={() => setOpen(false)} aria-label={t('close')}><Minimize2 size={17} /></button></header>
       <div className="saathi-messages" ref={scrollRef} aria-live="polite" aria-relevant="additions text">
         {messages.length === 0 && <div className="saathi-welcome"><p>{t('welcome')}</p><div className="saathi-quick">{quickReplies.map(([reply, destination]) => <button key={reply} onClick={() => { setOpen(false); router.push(destination); }}>{reply}</button>)}</div></div>}
-        {messages.map((message, index) => <article className={`saathi-message ${message.role}`} key={`${index}-${message.content.slice(0, 8)}`}><p>{message.content}</p>{message.source && <Link href={message.source.href as never} className="saathi-source">{t('source')}: {message.source.title}</Link>}{message.handoff && <p className="saathi-handoff">{agentText('humanReview')}</p>}{message.role === 'assistant' && <div className="saathi-feedback"><span>{t('helpful')}</span><button aria-label={t('yes')} onClick={(event) => event.currentTarget.classList.toggle('selected')}><ThumbsUp size={13} /></button><button aria-label={t('no')} onClick={(event) => event.currentTarget.classList.toggle('selected')}><ThumbsDown size={13} /></button></div>}</article>)}
+        {messages.map((message, index) => <article className={`saathi-message ${message.role}`} key={`${index}-${message.content.slice(0, 8)}`}>
+          <p>{message.content}</p>
+          {message.source && <Link href={message.source.href as never} className="saathi-source">{t('source')}: {message.source.title}</Link>}
+          {message.action?.startsWith('/') && !message.action.startsWith('//') && <Link href={message.action as never} className="saathi-source saathi-action">{workspaceText('open')} <ArrowRight size={14} /></Link>}
+          {message.handoff && <p className="saathi-handoff">{agentText('humanReview')}</p>}
+          {message.role === 'assistant' && <div className="saathi-feedback"><span>{t('helpful')}</span><button aria-label={t('yes')} onClick={(event) => event.currentTarget.classList.toggle('selected')}><ThumbsUp size={13} /></button><button aria-label={t('no')} onClick={(event) => event.currentTarget.classList.toggle('selected')}><ThumbsDown size={13} /></button></div>}
+        </article>)}
         {busy && <p className="saathi-thinking" role="status">{t('thinking')}…</p>}
       </div>
       {!speechSupported && <p className="saathi-error" role="status">{t('unsupported')}</p>}

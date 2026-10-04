@@ -1,6 +1,6 @@
 # Document Connectors
 
-`DocumentSource` defines authorize/list/fetch/verify operations. Phase A includes an in-memory manual-upload adapter with type/size/hash checks, consent-gated synthetic DigiLocker documents, and mock GSTN/Udyam/MCA/PAN/land-record/department sources. The mock fixtures contain no real personal data. They are not network connectors and must not be treated as verification evidence from a government system.
+`DocumentSource` defines authorize/list/fetch/verify operations. Authenticated manual uploads are stored as Prisma document rows, while the mock connector adapter tests type/signature/size/hash checks. DigiLocker examples remain synthetic, consent-gated fixtures; GSTN/Udyam/MCA/PAN/land-record/department sources are mocks. Mock fixtures contain no real personal data and are not verification evidence from a government system. Document bytes are stored in the configured SQLite/libSQL database and require human review; malware scanning is not implemented.
 
 ## DigiLocker setup
 

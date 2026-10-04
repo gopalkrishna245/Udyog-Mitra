@@ -1,7 +1,55 @@
 {
-  "name": "udyog-mitra", "version": "0.1.0", "private": true,
-    "scripts": { "dev": "cross-env SWC_NATIVE_BINDING_CACHE=/tmp/udyog-mitra-swc next dev", "build": "cross-env SWC_NATIVE_BINDING_CACHE=/tmp/udyog-mitra-swc next build", "start": "cross-env SWC_NATIVE_BINDING_CACHE=/tmp/udyog-mitra-swc next start", "lint": "eslint src prisma evals", "typecheck": "tsc --noEmit", "test": "vitest run", "eval:training-jsonl": "tsx evals/l1_training_data_generator.ts", "db:migrate": "prisma migrate dev", "db:seed": "prisma db seed" },
-    "dependencies": { "@hookform/resolvers": "^3.10.0", "@prisma/client": "^6.19.0", "bcryptjs": "^3.0.2", "framer-motion": "^12.23.0", "lucide-react": "^0.468.0", "next": "^15.5.0", "next-auth": "^4.24.11", "next-intl": "^4.3.0", "nodemailer": "^7.0.5", "prisma": "^6.19.0", "react": "^19.1.0", "react-dom": "^19.1.0", "react-hook-form": "^7.62.0", "recharts": "^2.15.4", "zod": "^4.1.5" },
-    "devDependencies": { "@tailwindcss/postcss": "^4.1.13", "@types/node": "^22.18.6", "@types/nodemailer": "^6.4.19", "@types/react": "^19.1.13", "@types/react-dom": "^19.1.9", "cross-env": "^10.0.0", "eslint": "^9.35.0", "eslint-config-next": "^15.5.0", "tailwindcss": "^4.1.13", "tsx": "^4.20.5", "typescript": "^5.9.2", "vitest": "^3.2.4" },
-  "prisma": { "seed": "tsx prisma/seed.ts" }
+  "name": "udyog-mitra",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "postinstall": "prisma generate",
+    "dev": "cross-env SWC_NATIVE_BINDING_CACHE=/tmp/udyog-mitra-swc next dev",
+    "build": "cross-env SWC_NATIVE_BINDING_CACHE=/tmp/udyog-mitra-swc next build",
+    "start": "cross-env SWC_NATIVE_BINDING_CACHE=/tmp/udyog-mitra-swc next start",
+    "lint": "eslint src prisma evals",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "eval:training-jsonl": "tsx evals/l1_training_data_generator.ts",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:turso": "tsx scripts/migrate-turso.ts",
+    "db:seed": "prisma db seed"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.10.0",
+    "@libsql/client": "^0.8.1",
+    "@prisma/adapter-libsql": "^6.19.0",
+    "@prisma/client": "^6.19.0",
+    "bcryptjs": "^3.0.2",
+    "framer-motion": "^12.23.0",
+    "lucide-react": "^0.468.0",
+    "next": "^15.5.0",
+    "next-auth": "^4.24.11",
+    "next-intl": "^4.3.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-hook-form": "^7.62.0",
+    "recharts": "^2.15.4",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.13",
+    "@types/node": "^22.18.6",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "cross-env": "^10.0.0",
+    "eslint": "^9.35.0",
+    "eslint-config-next": "^15.5.0",
+    "prisma": "^6.19.0",
+    "tailwindcss": "^4.1.13",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "overrides": {
+    "postcss": "^8.5.28"
+  }
 }

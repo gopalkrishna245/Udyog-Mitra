@@ -65,18 +65,25 @@ export async function orchestrate(rawRequest: OrchestrationRequest, tools: Agent
   let nextBestAction: string | null = null;
 
   if (toolCall) {
-    const toolResult = await tools.execute({
-      name: toolCall, actorId: request.userId, role: request.role, profile, applicationId: slots.applicationId,
-      approvalId: slots.approvalId,
-      destination: intentResult.intent === 'talk_to_human' ? '/contact' : null,
-      ...(request.document ? { document: request.document } : {}),
-    });
-    facts = toolResult.facts;
-    sources.push(...toolResult.sources);
-    reasonTrace = [...reasonTrace, ...toolResult.reasonTrace];
-    confidence = Math.min(confidence, toolResult.confidence);
-    needsHuman ||= toolResult.needsHuman;
-    nextBestAction = toolResult.destination;
+    try {
+      const toolResult = await tools.execute({
+        name: toolCall, actorId: request.userId, role: request.role, profile, applicationId: slots.applicationId,
+        approvalId: slots.approvalId,
+        destination: intentResult.intent === 'talk_to_human' ? '/contact' : null,
+        ...(request.document ? { document: request.document } : {}),
+      });
+      facts = toolResult.facts;
+      sources.push(...toolResult.sources);
+      reasonTrace = [...reasonTrace, ...toolResult.reasonTrace];
+      confidence = Math.min(confidence, toolResult.confidence);
+      needsHuman ||= toolResult.needsHuman;
+      nextBestAction = toolResult.destination;
+    } catch {
+      confidence = 0;
+      needsHuman = true;
+      nextBestAction = fallbackDestination(toolCall);
+      reasonTrace.push('orchestrator.tool.failure', 'orchestrator.rule_based_handoff');
+    }
   } else {
     const matches = bm25Search(modelInput, language, 3);
     facts = matches.map((entry) => ({ key: entry.title, value: entry.body, source: `${entry.source}@${entry.version}` }));
@@ -103,6 +110,15 @@ export async function orchestrate(rawRequest: OrchestrationRequest, tools: Agent
   });
   auditSink.append({ actorId: request.userId, action: `ai.${intentResult.intent}`, layer: 'orchestrator', model: response.model, reasonTrace, input: { message: request.message, language, redactions: masked.redactions, intent: intentResult.intent } });
   return response;
+}
+
+function fallbackDestination(tool: z.infer<typeof AgentToolNameSchema>) {
+  const destinations: Record<typeof tool, string> = {
+    startChecklist: '/know-your-approvals', estimateTimeline: '/know-your-approvals', fetchDocuments: '/documents',
+    verifyDocument: '/documents', trackApplication: '/applications', matchSchemes: '/incentives',
+    createGrievance: '/grievance', navigate: '/contact',
+  };
+  return destinations[tool];
 }
 
 export function grantExternalAiConsent(userId: string) {

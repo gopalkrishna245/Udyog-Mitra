@@ -6,7 +6,7 @@ import { maskPii } from '../governance/pii-mask';
 import { MockDigiLockerSource } from '../connectors/mock-digilocker';
 import { parseWhatsAppInbound, verifyMetaWebhookSignature } from '../connectors/whatsapp';
 import { orchestrate } from './orchestrator';
-import { createAgentToolRegistry } from './tools';
+import { AgentToolRegistry, createAgentToolRegistry } from './tools';
 import { buildTuningJsonl } from '../../../evals/l1_training_data_generator';
 import { createHmac } from 'node:crypto';
 
@@ -41,6 +41,15 @@ describe('Phase A L1 and governance boundaries', () => {
     expect(result.answer).toContain(String(result.facts.find((fact) => fact.key === 'medianJourneyDays')?.value));
     expect(result.sources.length).toBeGreaterThan(0);
     expect(Number(result.facts.find((fact) => fact.key === 'medianJourneyDays')?.value)).toBeLessThan(30);
+  });
+
+  it('hands off safely when an agent tool fails and preserves a useful next action', async () => {
+    const tools = new AgentToolRegistry().register('estimateTimeline', async () => { throw new Error('simulated timeline outage'); });
+    const result = await orchestrate({ message: 'How long for Fire NOC?', language: 'en' }, tools);
+    expect(result.needsHuman).toBe(true);
+    expect(result.facts).toEqual([]);
+    expect(result.nextBestAction).toBe('/know-your-approvals');
+    expect(result.reasonTrace).toContain('orchestrator.rule_based_handoff');
   });
 
   it('produces one fact-free tuning example for every intent and locale', () => {

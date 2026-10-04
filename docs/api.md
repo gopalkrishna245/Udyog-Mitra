@@ -5,8 +5,11 @@ JSON errors use `{ "error": { "code": "...", "message": "..." } }`; success resp
 | Method and path | Access | Purpose |
 | --- | --- | --- |
 | `GET/POST /api/auth/[...nextauth]` | Public / NextAuth CSRF | Credentials sign-in, sign-out, and session. |
-| `GET /api/applications` | Signed in | Applicants see only their business profile's records; staff roles see the operations dataset. |
-| `POST /api/applications` | Applicant | Validate and create an application and parallel departmental work items. Same-origin required. |
+| `GET /api/applications` | Signed in | Applicants see only their business profile's records; officers are scoped to their department. Supports `search`, `status`, `page` (default 1), and `pageSize` (default 25, maximum 100). Search covers application ID, project/business name, district, and department code. Returns `{ "data": [...], "pagination": { "page", "pageSize", "total", "totalPages" } }`. |
+| `POST /api/applications` | Applicant | Validate and create an application and parallel departmental work items. Accepts owner-checked `documentIds` and a legal `organizationType`; links saved documents without changing verification status. Same-origin required. |
+| `GET/POST /api/documents` | Applicant | List owned document metadata or upload a PDF/JPG/PNG (maximum 4 MB); same-origin required. Bytes and provenance are stored in Prisma, but uploads are not malware-scanned and remain review-required. |
+| `GET/POST /api/documents/digilocker` | Applicant | List synthetic sample documents after consent; grant/revoke short-lived consent or import a sample. Every response is marked simulated and requires review; this is not a live DigiLocker integration. |
+| `GET/POST /api/documents/review` | Nodal officer or admin | List pending records or record a manual office visit and final `VERIFIED`/`REJECTED` decision with notes; writes a verification record and audit log. Simulated samples remain explicitly simulated. |
 | `GET /api/applications/:id` | Signed in | Checks applicant ownership and officer department scope before returning a case. |
 | `PATCH /api/applications/:id` | Officer, nodal, or admin | Approve, reject with a mandatory reason, or raise a consolidated deficiency query; writes history and audit records. Same-origin required. |
 | `POST /api/ai/chat` | Public or signed in, rate-limited | L1 intent/slot routing, L2 facts, L3 tools, consent arbitration, sources, and human handoff. Thirty requests per minute per actor/IP. |
